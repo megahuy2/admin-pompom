@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>PomPom · Cộng đồng</title>
+  <style>
+    :root{
+      --pink:#ff5b8a; --pink-2:#ff8fb1; --pink-soft:#ffe6ee; --ink:#1f1622;
+      --muted:#8a8090; --line:#f0e6ec; --bg:#fff7fa; --card:#ffffff;
+      --shadow:0 8px 30px rgba(255,91,138,.12); --radius:18px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:#eee;color:var(--ink);display:flex;justify-content:center}
+    /* Phone frame */
+    .phone{width:100%;max-width:430px;min-height:100vh;background:var(--bg);position:relative;
+      display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.15)}
+    /* Header */
+    header{position:sticky;top:0;z-index:30;background:rgba(255,247,250,.9);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--line)}
+    .brandbar{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}
+    .logo{font-weight:800;font-size:22px;letter-spacing:-.5px;
+      background:linear-gradient(135deg,var(--pink),#ff9d5c);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .logo small{font-weight:600;color:var(--muted);-webkit-text-fill-color:var(--muted);font-size:12px;margin-left:6px}
+    .bell{margin-left:auto;width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;
+      box-shadow:var(--shadow);font-size:16px}
+    /* Tabs */
+    .tabs{display:flex;gap:4px;padding:4px 10px 10px;overflow-x:auto;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex:0 0 auto;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:14px;
+      padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:.2s}
+    .tab.active{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;box-shadow:var(--shadow)}
+    /* Scroll area */
+    main{flex:1;overflow:hidden}
+    .view{display:none;height:calc(100vh - 108px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .view.active{display:block}
+    .pad{padding:14px 14px 90px}
+    .loading{padding:40px;text-align:center;color:var(--muted)}
+    .sect-title{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:6px 4px 10px}
+
+    /* ---------- REELS ---------- */
+    #view-reels{scroll-snap-type:y mandatory;background:#000}
+    .reel{position:relative;height:calc(100vh - 108px);scroll-snap-align:start;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .reel video{width:100%;height:100%;object-fit:cover}
+    .reel .grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,0) 45%,rgba(0,0,0,.25) 100%);pointer-events:none}
+    .reel .srcbadge{position:absolute;top:14px;left:14px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
+      color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;display:flex;align-items:center;gap:6px}
+    .reel .info{position:absolute;left:14px;right:70px;bottom:24px;color:#fff}
+    .reel .author{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+    .reel .author img{width:38px;height:38px;border-radius:50%;border:2px solid #fff;object-fit:cover}
+    .reel .author b{font-size:14px}
+    .reel .verified{color:#4db5ff;font-size:12px}
+    .reel .cap{font-size:13.5px;line-height:1.45;margin:0 0 10px;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+    .reel .prodchips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);
+      color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:999px;display:flex;align-items:center;gap:4px}
+    .reel .rail{position:absolute;right:12px;bottom:30px;display:flex;flex-direction:column;gap:18px;align-items:center}
+    .rbtn{display:flex;flex-direction:column;align-items:center;gap:3px;color:#fff;font-size:11px;font-weight:700}
+    .rbtn .ic{font-size:26px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+    .reel .follow{position:absolute;right:12px;top:14px}
+    .reel .follow button{background:var(--pink);color:#fff;border:none;font-weight:700;font-size:12px;padding:7px 12px;border-radius:999px}
+
+    /* ---------- CARDS (blog/tips) ---------- */
+    .card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px}
+    .card .cover{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--pink-soft);display:block}
+    .card .body{padding:12px 14px 14px}
+    .kicker{display:inline-block;font-size:11px;font-weight:800;color:var(--pink);background:var(--pink-soft);
+      padding:4px 9px;border-radius:999px;margin-bottom:8px}
+    .card h3{margin:0 0 6px;font-size:16px;line-height:1.3}
+    .card p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+    .meta{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)}
+    .meta img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+    .dot{width:3px;height:3px;border-radius:50%;background:var(--muted);display:inline-block}
+
+    /* Experts rail */
+    .exprail{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+    .exprail::-webkit-scrollbar{display:none}
+    .expcard{flex:0 0 150px;background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:14px;text-align:center}
+    .expcard img{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 8px;border:3px solid var(--pink-soft)}
+    .expcard b{font-size:13.5px;display:block}
+    .expcard .role{font-size:11px;color:var(--pink);font-weight:700;margin:2px 0 4px}
+    .expcard .spec{font-size:11px;color:var(--muted);min-height:28px}
+    .expcard .rate{font-size:11px;color:#f5a623;font-weight:700;margin-top:4px}
+    .tipfoot{display:flex;align-items:center;gap:10px;margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
+    .tipfoot img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+    .tipfoot .en{flex:1;font-size:12px}
+    .tipfoot .en b{font-size:12.5px;display:block}
+    .tipfoot .en span{color:var(--muted)}
+    .btn-consult{background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;border:none;font-weight:800;
+      font-size:12.5px;padding:9px 14px;border-radius:999px;box-shadow:var(--shadow);white-space:nowrap;cursor:pointer}
+
+    /* ---------- NEARBY ---------- */
+    .geobar{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:11px 13px;
+      box-shadow:var(--shadow);margin-bottom:14px;font-size:12.5px}
+    .geobar .pin{font-size:16px}
+    .geobar b{color:var(--ink)}
+    .geobar select{margin-left:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-weight:700;color:var(--pink);background:#fff}
+    .ngrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .npost{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:9/13;box-shadow:var(--shadow)}
+    .npost img,.npost video{width:100%;height:100%;object-fit:cover;display:block}
+    .npost .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72),transparent 55%);pointer-events:none}
+    .npost .exp{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:#fff;
+      font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;display:flex;align-items:center;gap:4px}
+    .npost .dist{position:absolute;top:8px;right:8px;background:var(--pink);color:#fff;font-size:10px;font-weight:800;
+      padding:4px 8px;border-radius:999px}
+    .npost .vtag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:34px;color:rgba(255,255,255,.9);pointer-events:none}
+    .npost .nb{position:absolute;left:9px;right:9px;bottom:9px;color:#fff}
+    .npost .nb .u{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+    .npost .nb .u img{width:22px;height:22px;border-radius:50%;border:1.5px solid #fff}
+    .npost .nb .u b{font-size:11.5px}
+    .npost .nb .txt{font-size:11px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 10px}
+
+    /* Composer FAB */
+    .fab{position:absolute;right:16px;bottom:80px;z-index:25;width:56px;height:56px;border-radius:50%;
+      background:linear-gradient(135deg,var(--pink),#ff9d5c);color:#fff;border:none;font-size:26px;box-shadow:0 10px 24px rgba(255,91,138,.5);cursor:pointer}
+
+    /* Bottom nav */
+    .bnav{position:sticky;bottom:0;z-index:30;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);
+      border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+    .bnav button{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;
+      font-size:10px;font-weight:700;color:var(--muted);cursor:pointer}
+    .bnav button.on{color:var(--pink)}
+    .bnav .bi{font-size:20px}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}
+    .modal.show{display:flex}
+    .sheet{width:100%;max-width:430px;background:#fff;border-radius:22px 22px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));
+      animation:up .28s ease}
+    @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sheet h2{margin:0 0 4px;font-size:19px}
+    .sheet .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+    .field{margin-bottom:11px}
+    .field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:var(--ink)}
+    .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;
+      font-size:14px;font-family:inherit;background:#fdfbfc}
+    .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--pink)}
+    .grip{width:40px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px}
+    .submit{width:100%;background:linear-gradient(135deg,var(--pink),var(--pink-2));color:#fff;border:none;font-weight:800;
+      font-size:15px;padding:14px;border-radius:14px;margin-top:6px;box-shadow:var(--shadow);cursor:pointer}
+    .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:#fff;
+      padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:60;opacity:0;transition:.3s;pointer-events:none;max-width:90%;text-align:center}
+    .toast.show{opacity:1}
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <div class="brandbar">
+        <span class="logo">PomPom<small>Cộng đồng</small></span>
+        <div class="bell">🔔</div>
+      </div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-view="reels">🎬 Reels</button>
+        <button class="tab" data-view="blog">📖 Blog</button>
+        <button class="tab" data-view="tips">👩‍⚕️ Bác sĩ</button>
+        <button class="tab" data-view="nearby">📍 Gần đây</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="view-reels" class="view active"><div class="loading">Đang tải reels…</div></section>
+      <section id="view-blog" class="view"><div class="pad"><div class="loading">Đang tải blog…</div></div></section>
+      <section id="view-tips" class="view"><div class="pad"><div class="loading">Đang tải…</div></div></section>
+      <section id="view-nearby" class="view"><div class="pad"><div class="loading">Đang tải tin gần bạn…</div></div></section>
+    </main>
+
+    <button class="fab" id="fab" title="Đăng tin gần đây">＋</button>
+
+    <nav class="bnav" id="bnav">
+      <button data-view="reels" class="on"><span class="bi">🎬</span>Reels</button>
+      <button data-view="blog"><span class="bi">📖</span>Blog</button>
+      <button data-view="tips"><span class="bi">👩‍⚕️</span>Tư vấn</button>
+      <button data-view="nearby"><span class="bi">📍</span>Gần đây</button>
+    </nav>
+  </div>
+
+  <!-- Modal liên hệ tư vấn -->
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <div class="grip"></div>
+      <h2>Liên hệ tư vấn</h2>
+      <p class="sub" id="modalSub">Để lại thông tin, bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.</p>
+      <form id="consultForm">
+        <div class="field"><label>Họ và tên *</label><input name="name" required placeholder="Nguyễn Thị A" /></div>
+        <div class="field"><label>Số điện thoại *</label><input name="phone" required inputmode="tel" placeholder="09xxxxxxxx" /></div>
+        <div class="field"><label>Loại da của bạn</label>
+          <select name="skin_type">
+            <option value="">-- Chọn --</option>
+            <option value="oily">Da dầu</option><option value="dry">Da khô</option>
+            <option value="combination">Da hỗn hợp</option><option value="sensitive">Da nhạy cảm</option>
+            <option value="normal">Da thường</option>
+          </select>
+        </div>
+        <div class="field"><label>Kênh liên hệ mong muốn</label>
+          <select name="preferred_channel">
+            <option value="zalo">Zalo</option><option value="phone">Gọi điện</option>
+            <option value="messenger">Messenger</option><option value="email">Email</option>
+          </select>
+        </div>
+        <div class="field"><label>Nội dung cần tư vấn</label><textarea name="message" rows="3" placeholder="Mô tả tình trạng da / vấn đề bạn quan tâm…"></textarea></div>
+        <input type="hidden" name="expert_id" /><input type="hidden" name="source_article_id" />
+        <button class="submit" type="submit">Gửi yêu cầu tư vấn</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = '/api/feed';
+    const $ = (s,el=document)=>el.querySelector(s);
+    const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+    const money = n => (n||0).toLocaleString('vi-VN')+'₫';
+    const kfmt = n => n>=1000000 ? (n/1000000).toFixed(1)+'M' : n>=1000 ? (n/1000).toFixed(1)+'K' : (n||0);
+    const esc = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const timeAgo = d => { const s=(Date.now()-new Date(d))/1000; if(s<3600)return Math.floor(s/60)+' phút trước';
+      if(s<86400)return Math.floor(s/3600)+' giờ trước'; return Math.floor(s/86400)+' ngày trước'; };
+    const expiresIn = d => { const s=(new Date(d)-Date.now())/1000; if(s<=0)return 'Hết hạn';
+      const h=Math.floor(s/3600), m=Math.floor((s%3600)/60); return h>0?`Còn ${h}h${m}p`:`Còn ${m} phút`; };
+    const srcIcon = s => ({instagram:'📷 Instagram',facebook:'👍 Facebook',tiktok:'🎵 TikTok',youtube:'▶️ YouTube'}[s]||s);
+
+    /* ---- Tab switching ---- */
+    function show(view){
+      $$('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+      $$('#tabs .tab').forEach(t=>t.classList.toggle('active', t.dataset.view===view));
+      $$('#bnav button').forEach(b=>b.classList.toggle('on', b.dataset.view===view));
+      $('#fab').style.display = view==='nearby' ? 'block' : 'none';
+      if(!loaded[view]) loaders[view]();
+    }
+    $('#tabs').addEventListener('click', e=>{ const t=e.target.closest('.tab'); if(t) show(t.dataset.view); });
+    $('#bnav').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) show(b.dataset.view); });
+
+    const loaded = {};
+    async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+    /* ---- REELS ---- */
+    async function loadReels(){
+      const el=$('#view-reels');
+      try{
+        const {data}=await getJSON(`${API}/reels?limit=10`);
+        el.innerHTML = data.map(r=>{
+          const chips=(r.product_tags||[]).map(p=>`<span class="chip">🛍️ ${esc(p.name)} · ${money(p.sale_price||p.price)}</span>`).join('');
+          return `<div class="reel">
+            <video src="${r.video_url}" muted loop playsinline preload="metadata"></video>
+            <div class="grad"></div>
+            <div class="srcbadge">${srcIcon(r.source)}</div>
+            <div class="follow"><button>+ Theo dõi</button></div>
+            <div class="rail">
+              <div class="rbtn"><span class="ic">❤️</span>${kfmt(r.like_count)}</div>
+              <div class="rbtn"><span class="ic">💬</span>${kfmt(r.comment_count)}</div>
+              <div class="rbtn"><span class="ic">↗️</span>${kfmt(r.share_count)}</div>
+              <div class="rbtn"><span class="ic">🛒</span>Mua</div>
+            </div>
+            <div class="info">
+              <div class="author"><img src="${r.author?.avatar_url||''}" onerror="this.style.visibility='hidden'">
+                <b>${esc(r.author?.handle||r.author?.name||'')}</b> ${r.author?.verified?'<span class="verified">✔️</span>':''}</div>
+              <p class="cap">${esc(r.caption||'')}</p>
+              <div class="prodchips">${chips}</div>
+            </div>
+          </div>`;
+        }).join('');
+        setupReelAutoplay(el);
+      }catch(e){ el.innerHTML=`<div class="loading" style="color:#fff">Không tải được reels (${e.message})</div>`; }
+      loaded.reels=true;
+    }
+    function setupReelAutoplay(container){
+      const vids=$$('video',container);
+      const io=new IntersectionObserver(ents=>ents.forEach(en=>{
+        const v=en.target;
+        if(en.isIntersecting && en.intersectionRatio>0.6){ v.play().catch(()=>{}); }
+        else v.pause();
+      }),{threshold:[0,.6,1]});
+      vids.forEach(v=>{ io.observe(v); v.addEventListener('click',()=>{ v.paused?v.play():v.pause(); }); });
+      if(vids[0]) vids[0].play().catch(()=>{});
+    }
+
+    /* ---- BLOG ---- */
+    async function loadBlog(){
+      const el=$('#view-blog');
+      try{
+        const {data}=await getJSON(`${API}/blogs?limit=10`);
+        el.innerHTML = `<div class="pad"><div class="sect-title">Blog thương hiệu PomPom</div>`+
+          data.map(b=>`<div class="card">
+            <img class="cover" src="${b.cover_image||''}" onerror="this.style.opacity=.2">
+            <div class="body">
+              <span class="kicker">${esc(b.category||'Blog')}</span>
+              <h3>${esc(b.title)}</h3>
+              <p>${esc(b.excerpt||'')}</p>
+              <div class="meta"><img src="${b.author?.avatar_url||''}"> <span>${esc(b.author?.name||'PomPom')}</span>
+                <span class="dot"></span><span>${b.read_time} phút đọc</span>
+                <span class="dot"></span><span>👁️ ${kfmt(b.view_count)}</span></div>
+            </div></div>`).join('')+`</div>`;
+      }catch(e){ el.innerHTML=`<div class="pad"><div class="loading">Lỗi tải blog (${e.message})</div></div>`; }
+      loaded.blog=true;
+    }
+
+    /* ---- TIPS (bác sĩ) ---- */
+    async function loadTips(){
+      const el=$('#view-tips');
+      try{
+        const [ex, ar] = await Promise.all([ getJSON(`${API}/experts`), getJSON(`${API}/expert-articles?limit=10`) ]);
+        const experts = ex.data.map(e=>`<div class="expcard">
+            <img src="${e.avatar_url||''}"><b>${esc(e.name)}</b>
+            <div class="role">${esc(e.title||'')}</div>
+            <div class="spec">${esc(e.specialty||'')}</div>
+            <div class="rate">⭐ ${e.rating} · ${kfmt(e.consultation_count)} lượt</div>
+            <button class="btn-consult" style="margin-top:8px;width:100%" data-expert="${e._id}" data-name="${esc(e.name)}">Tư vấn</button>
+          </div>`).join('');
+        const articles = ar.data.map(a=>`<div class="card">
+            <img class="cover" src="${a.cover_image||''}" onerror="this.style.opacity=.2">
+            <div class="body">
+              <span class="kicker">${esc(a.category||'Tips')}</span>
+              <h3>${esc(a.title)}</h3>
+              <p>${esc(a.excerpt||'')}</p>
+              <div class="tipfoot">
+                <img src="${a.expert_id?.avatar_url||''}">
+                <div class="en"><b>${esc(a.expert_id?.name||'Chuyên gia')}</b><span>${esc(a.expert_id?.title||'')} · ${a.read_time} phút đọc</span></div>
+                <button class="btn-consult" data-expert="${a.expert_id?._id||''}" data-name="${esc(a.expert_id?.name||'')}" data-article="${a._id}">Liên hệ tư vấn</button>
+              </div>
+            </div></div>`).join('');
+        el.innerHTML = `<div class="pad">
+          <div class="sect-title">Đội ngũ bác sĩ tư vấn</div>
+          <div class="exprail">${experts}</div>
+          <div class="sect-title" style="margin-top:6px">Bài viết tips từ bác sĩ</div>
+          ${articles}</div>`;
+        $$('.btn-consult',el).forEach(b=>b.addEventListener('click',()=>openConsult(b.dataset)));
+      }catch(e){ el.innerHTML=`<div class="pad"><div class="loading">Lỗi tải (${e.message})</div></div>`; }
+      loaded.tips=true;
+    }
+
+    /* ---- NEARBY ---- */
+    let myPos = {lng:106.7009, lat:10.7769, label:'TP. Hồ Chí Minh'}; // mặc định
+    async function loadNearby(radius){
+      const el=$('#view-nearby');
+      radius = radius || 100;
+      el.innerHTML = `<div class="pad">
+        <div class="geobar"><span class="pin">📍</span> Vị trí của bạn: <b>${myPos.label}</b>
+          <select id="radiusSel">
+            <option value="20">20 km</option><option value="50">50 km</option>
+            <option value="100" selected>100 km</option><option value="500">500 km</option>
+          </select></div>
+        <div class="sect-title">Tin gần bạn · tự xoá sau 24h</div>
+        <div class="ngrid" id="ngrid"><div class="loading">Đang tải…</div></div></div>`;
+      $('#radiusSel').value=String(radius);
+      $('#radiusSel').addEventListener('change',e=>loadNearby(+e.target.value));
+      try{
+        const {data,count}=await getJSON(`${API}/nearby?lng=${myPos.lng}&lat=${myPos.lat}&radius=${radius}`);
+        const grid=$('#ngrid');
+        if(!count){ grid.innerHTML=`<div class="empty">Chưa có tin nào trong bán kính ${radius}km 😴</div>`; loaded.nearby=true; return; }
+        grid.innerHTML = data.map(p=>{
+          const media = p.media_type==='video'
+            ? `<video src="${p.media_url}" muted loop playsinline preload="metadata"></video><div class="vtag">▶</div>`
+            : `<img src="${p.media_url||p.thumbnail_url||''}" onerror="this.style.opacity=.3">`;
+          return `<div class="npost">
+            ${media}<div class="ov"></div>
+            <div class="exp">⏳ ${expiresIn(p.expires_at)}</div>
+            <div class="dist">${p.distance_km} km</div>
+            <div class="nb"><div class="u"><img src="${p.user?.avatar_url||''}"><b>${esc(p.user?.full_name||'Người dùng')}</b></div>
+              <div class="txt">${esc(p.content||'')}</div></div>
+          </div>`;
+        }).join('');
+        // autoplay video tin
+        $$('.npost video',grid).forEach(v=>{ const io=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting?v.play().catch(()=>{}):v.pause()),{threshold:.5}); io.observe(v); });
+      }catch(e){ $('#ngrid').innerHTML=`<div class="empty">Lỗi tải tin gần (${e.message})</div>`; }
+      loaded.nearby=true;
+    }
+    function initGeo(){
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(pos=>{
+          myPos={lng:pos.coords.longitude, lat:pos.coords.latitude, label:'Vị trí hiện tại của bạn'};
+          if(loaded.nearby) loadNearby(+($('#radiusSel')?.value||100));
+        }, ()=>{/* giữ mặc định HCM */}, {timeout:5000});
+      }
+    }
+
+    /* ---- Modal tư vấn ---- */
+    const modal=$('#modal');
+    function openConsult(ds){
+      $('input[name=expert_id]').value = ds.expert||'';
+      $('input[name=source_article_id]').value = ds.article||'';
+      $('#modalSub').textContent = ds.name ? `Gửi tới ${ds.name} — bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.`
+        : 'Để lại thông tin, bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.';
+      modal.classList.add('show');
+    }
+    modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
+    $('#fab').addEventListener('click',()=>toast('📸 Tính năng đăng tin đang phát triển — tin sẽ hiển thị 24h trong bán kính 100km!'));
+    $('#consultForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const fd=Object.fromEntries(new FormData(e.target).entries());
+      try{
+        const r=await fetch(`${API}/consultation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fd)});
+        const j=await r.json();
+        if(!r.ok) throw new Error(j.message||'Lỗi');
+        modal.classList.remove('show'); e.target.reset();
+        toast('✅ '+j.message);
+      }catch(err){ toast('❌ '+err.message); }
+    });
+
+    const toastEl=$('#toast'); let tt;
+    function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>toastEl.classList.remove('show'),3200); }
+
+    const loaders={reels:loadReels, blog:loadBlog, tips:loadTips, nearby:()=>loadNearby(100)};
+    loadReels();      // tab mặc định
+    initGeo();
+  </script>
+</body>
+</html>

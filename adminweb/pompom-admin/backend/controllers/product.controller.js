@@ -1,7 +1,11 @@
-const { Product, ProductImage, ProductVariant, Category } = require('../models');
+const { Product, ProductImage, ProductVariant, Category, OrderItem } = require('../models');
+
+// Cột cho phép sắp xếp (whitelist)
+const PRODUCT_SORTABLE = ['_id', 'price', 'stock', 'name'];
 
 /**
- * GET /api/products?page=1&limit=20&category_id=&search=
+ * GET /api/products?page=1&limit=20&category_id=&search=&is_active=&sortBy=&sortDir=
+ * Trả kèm: ảnh đầu tiên, số lượng đã bán (loại đơn huỷ/hoàn), ngày tạo (từ _id).
  */
 async function getProducts(req, res) {
   try {
@@ -10,29 +14,54 @@ async function getProducts(req, res) {
     const filter = {};
 
     if (req.query.category_id) filter.category_id = req.query.category_id;
-    if (req.query.search) filter.name = { $regex: req.query.search, $options: 'i' };
+    if (req.query.search) {
+      const regex = { $regex: req.query.search, $options: 'i' };
+      filter.$or = [{ name: regex }, { sku: regex }];
+    }
     if (req.query.is_active !== undefined) filter.is_active = req.query.is_active === 'true';
+
+    const sortBy = PRODUCT_SORTABLE.includes(req.query.sortBy) ? req.query.sortBy : '_id';
+    const sortDir = req.query.sortDir === 'asc' ? 1 : -1;
 
     const [products, total] = await Promise.all([
       Product.find(filter)
         .populate('category_id', 'category_name')
         .skip((page - 1) * limit)
         .limit(limit)
-        .sort({ _id: -1 }),
+        .sort({ [sortBy]: sortDir }),
       Product.countDocuments(filter)
     ]);
 
-    // Kèm ảnh đầu tiên của mỗi sản phẩm để hiển thị thumbnail ở danh sách
     const productIds = products.map((p) => p._id);
-    const images = await ProductImage.find({ product_id: { $in: productIds } }).sort({ sort_order: 1 });
+
+    // Ảnh đầu tiên + số đã bán (song song)
+    const [images, soldAgg] = await Promise.all([
+      ProductImage.find({ product_id: { $in: productIds } }).sort({ sort_order: 1 }),
+      OrderItem.aggregate([
+        { $match: { product_id: { $in: productIds } } },
+        { $lookup: { from: 'orders', localField: 'order_id', foreignField: '_id', as: 'order' } },
+        { $unwind: '$order' },
+        { $match: { 'order.status': { $nin: ['cancelled', 'returned'] } } },
+        { $group: { _id: '$product_id', sold: { $sum: '$quantity' } } }
+      ])
+    ]);
+
     const firstImageByProduct = {};
     images.forEach((img) => {
       const key = img.product_id.toString();
       if (!firstImageByProduct[key]) firstImageByProduct[key] = img;
     });
+    const soldMap = {};
+    soldAgg.forEach((s) => { soldMap[s._id.toString()] = s.sold; });
+
     const data = products.map((p) => {
       const first = firstImageByProduct[p._id.toString()];
-      return { ...p.toObject(), images: first ? [first] : [] };
+      return {
+        ...p.toObject(),
+        images: first ? [first] : [],
+        sold: soldMap[p._id.toString()] || 0,
+        created_at: p._id.getTimestamp()
+      };
     });
 
     res.json({ data, total, page, totalPages: Math.ceil(total / limit) });

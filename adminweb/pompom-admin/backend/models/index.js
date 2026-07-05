@@ -8,6 +8,8 @@ const promotionModels = require('./promotion.models');
 const orderModels = require('./order.models');
 const engagementModels = require('./engagement.models');
 const communityModels = require('./community.models');
+const communityFeedModels = require('./communityFeed.models');
+const websiteModels = require('./website.models');
 const aiModels = require('./ai.models');
 const membershipModels = require('./membership.models');
 
@@ -18,6 +20,8 @@ module.exports = {
   ...orderModels,
   ...engagementModels,
   ...communityModels,
+  ...communityFeedModels,
+  ...websiteModels,
   ...aiModels,
   ...membershipModels
 };

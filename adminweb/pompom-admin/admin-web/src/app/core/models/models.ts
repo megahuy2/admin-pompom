@@ -15,6 +15,16 @@ export interface DashboardSummary {
   newUsersLast30Days: number;
   todayOrders: number;
   todayRevenue: number;
+  totalProducts: number;
+}
+
+export interface TopCustomer {
+  userId: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string | null;
+  orderCount: number;
+  totalSpent: number;
 }
 
 export interface RevenuePoint {
@@ -88,6 +98,8 @@ export interface User {
   join_date?: string;
   last_login?: string;
   created_at?: string;
+  order_count?: number;
+  total_spent?: number;
 }
 
 export interface UserAddress {
@@ -110,9 +122,25 @@ export interface UserDetail extends User {
 export interface Category {
   _id: string;
   category_name: string;
-  parent_id?: string | null;
+  parent_id?: string | { _id: string; category_name: string } | null;
   sort_order?: number;
   image_url?: string;
+  product_count?: number;
+}
+
+export interface Voucher {
+  _id: string;
+  code: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  min_order_amount?: number;
+  max_discount?: number;
+  start_date: string;
+  end_date: string;
+  usage_limit?: number;
+  used_count?: number;
+  is_active: boolean;
+  assignedCount?: number;
 }
 
 export interface ProductImage {
@@ -135,6 +163,8 @@ export interface Product {
   brand?: string;
   is_active: boolean;
   images?: ProductImage[];
+  sold?: number;
+  created_at?: string;
 }
 
 export interface Order {
@@ -153,9 +183,11 @@ export interface Order {
   tracking_number?: string;
   note?: string;
   created_at: string;
+  item_count?: number;
+  item_qty?: number;
 }
 
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'shipping' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'shipping' | 'delivered' | 'returned' | 'cancelled';
 
 export interface OrderItem {
   _id: string;

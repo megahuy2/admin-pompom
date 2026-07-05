@@ -52,6 +52,14 @@ const followSchema = new Schema({
   created_at: { type: Date, default: Date.now }
 }, { timestamps: false });
 
+// Index cho feed cộng đồng, duyệt nội dung, đếm like/comment
+communityPostSchema.index({ user_id: 1 });
+communityPostSchema.index({ is_hidden: 1, created_at: -1 });
+commentSchema.index({ post_id: 1 });
+likeSchema.index({ target_type: 1, target_id: 1 });
+followSchema.index({ follower_id: 1 });
+followSchema.index({ followed_id: 1 });
+
 module.exports = {
   CommunityPost: mongoose.model('CommunityPost', communityPostSchema),
   Comment: mongoose.model('Comment', commentSchema),

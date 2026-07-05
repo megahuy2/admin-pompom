@@ -219,11 +219,18 @@ export class ProductForm implements OnInit {
     const req = this.isEdit() && this.id
       ? this.service.update(this.id, body)
       : this.service.create(body);
+    const wasEdit = this.isEdit();
     req.subscribe({
-      next: () => {
+      next: (res: Product) => {
         this.loading.set(false);
-        this.snack.open(this.isEdit() ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm', 'OK', { duration: 2500 });
-        this.router.navigate(['/products']);
+        if (wasEdit) {
+          this.snack.open('Đã cập nhật sản phẩm', 'OK', { duration: 2500 });
+          this.router.navigate(['/products']);
+        } else {
+          // Sau khi tạo, chuyển sang trang Sửa của sản phẩm mới để thêm ảnh ngay
+          this.snack.open('Đã tạo sản phẩm — hãy thêm ảnh bên dưới', 'OK', { duration: 3000 });
+          this.router.navigate(['/products', res._id, 'edit']);
+        }
       },
       error: (err) => {
         this.loading.set(false);

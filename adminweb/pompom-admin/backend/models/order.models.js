@@ -44,7 +44,8 @@ const orderSchema = new Schema({
   final_amount: { type: Number, required: true, min: 0 },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'preparing', 'shipping', 'delivered', 'cancelled'],
+    // 'returned' = Hoàn hàng (thêm mới, giữ tương thích các trạng thái cũ)
+    enum: ['pending', 'paid', 'preparing', 'shipping', 'delivered', 'returned', 'cancelled'],
     default: 'pending'
   },
   payment_method: { type: String, enum: ['COD', 'VNPay', 'MoMo', 'VISA'], required: true },
@@ -76,7 +77,7 @@ const orderStatusHistorySchema = new Schema({
   order_id: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'preparing', 'shipping', 'delivered', 'cancelled'],
+    enum: ['pending', 'paid', 'preparing', 'shipping', 'delivered', 'returned', 'cancelled'],
     required: true
   },
   note: { type: String, trim: true },
@@ -95,6 +96,16 @@ const paymentSchema = new Schema({
   payment_method: { type: String, enum: ['COD', 'VNPay', 'MoMo', 'VISA'], required: true },
   paid_at: { type: Date, default: null }
 }, { timestamps: false });
+
+// Index cho truy vấn nặng (lọc/sắp xếp đơn, join order items)
+cartSchema.index({ user_id: 1 });
+cartItemSchema.index({ cart_id: 1 });
+orderSchema.index({ user_id: 1 });
+orderSchema.index({ status: 1, created_at: -1 });
+orderSchema.index({ created_at: -1 });
+orderItemSchema.index({ order_id: 1 });
+orderItemSchema.index({ product_id: 1 });
+orderStatusHistorySchema.index({ order_id: 1 });
 
 module.exports = {
   Cart: mongoose.model('Cart', cartSchema),

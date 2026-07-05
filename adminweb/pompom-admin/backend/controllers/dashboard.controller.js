@@ -1,4 +1,4 @@
-const { Order, User } = require('../models');
+const { Order, User, Product } = require('../models');
 
 /**
  * GET /api/dashboard/summary
@@ -19,7 +19,8 @@ async function getDashboardSummary(req, res) {
       totalUsers,
       newUsers,
       todayOrders,
-      todayRevenueAgg
+      todayRevenueAgg,
+      totalProducts
     ] = await Promise.all([
       // Tổng doanh thu: chỉ tính đơn đã giao
       Order.aggregate([
@@ -42,12 +43,14 @@ async function getDashboardSummary(req, res) {
       Order.aggregate([
         { $match: { status: 'delivered', created_at: { $gte: startOfToday } } },
         { $group: { _id: null, total: { $sum: '$final_amount' } } }
-      ])
+      ]),
+      // Tổng sản phẩm đang bán (dữ liệu cũ lưu is_active dạng số → dùng $ne:false cho bền)
+      Product.countDocuments({ is_active: { $ne: false } })
     ]);
 
-    // Chuẩn hóa breakdown status: đảm bảo đủ 6 trạng thái kể cả khi count = 0
+    // Chuẩn hóa breakdown status: đảm bảo đủ 7 trạng thái kể cả khi count = 0
     const statusBreakdown = {
-      pending: 0, paid: 0, preparing: 0, shipping: 0, delivered: 0, cancelled: 0
+      pending: 0, paid: 0, preparing: 0, shipping: 0, delivered: 0, returned: 0, cancelled: 0
     };
     statusAgg.forEach((s) => {
       if (s._id in statusBreakdown) statusBreakdown[s._id] = s.count;
@@ -60,7 +63,8 @@ async function getDashboardSummary(req, res) {
       totalUsers,
       newUsersLast30Days: newUsers,
       todayOrders,
-      todayRevenue: todayRevenueAgg[0]?.total || 0
+      todayRevenue: todayRevenueAgg[0]?.total || 0,
+      totalProducts
     });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi server', error: err.message });

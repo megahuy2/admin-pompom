@@ -37,6 +37,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/order-list/order-list').then((m) => m.OrderList)
       },
       {
+        path: 'orders/new',
+        loadComponent: () => import('./features/orders/order-create/order-create').then((m) => m.OrderCreate)
+      },
+      {
         path: 'orders/:id',
         loadComponent: () => import('./features/orders/order-detail/order-detail').then((m) => m.OrderDetail)
       },
@@ -79,6 +83,29 @@ export const routes: Routes = [
       {
         path: 'community/:id',
         loadComponent: () => import('./features/community/post-detail/post-detail').then((m) => m.PostDetail)
+      },
+      // Các mục menu mới — màn hình đầy đủ sẽ hoàn thiện ở module tiếp theo
+      {
+        path: 'shipping',
+        loadComponent: () => import('./features/placeholder/placeholder').then((m) => m.Placeholder),
+        data: { title: 'Vận chuyển', icon: 'local_shipping' }
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('./features/categories/category-list').then((m) => m.CategoryList)
+      },
+      {
+        path: 'vouchers',
+        loadComponent: () => import('./features/vouchers/voucher-list').then((m) => m.VoucherList)
+      },
+      {
+        path: 'posts',
+        loadComponent: () => import('./features/placeholder/placeholder').then((m) => m.Placeholder),
+        data: { title: 'Bài viết', icon: 'article' }
+      },
+      {
+        path: 'report-export',
+        loadComponent: () => import('./features/reports/report-export').then((m) => m.ReportExport)
       }
     ]
   },

@@ -7,6 +7,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   preparing: 'Đang chuẩn bị',
   shipping: 'Đang giao',
   delivered: 'Đã giao',
+  returned: 'Hoàn hàng',
   cancelled: 'Đã hủy'
 };
 
@@ -16,8 +17,20 @@ export const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: 'preparing', label: ORDER_STATUS_LABELS['preparing'] },
   { value: 'shipping', label: ORDER_STATUS_LABELS['shipping'] },
   { value: 'delivered', label: ORDER_STATUS_LABELS['delivered'] },
+  { value: 'returned', label: ORDER_STATUS_LABELS['returned'] },
   { value: 'cancelled', label: ORDER_STATUS_LABELS['cancelled'] }
 ];
 
 // Trạng thái cuối — không cho đổi tiếp (khớp guard ở backend)
-export const TERMINAL_STATUSES: OrderStatus[] = ['delivered', 'cancelled'];
+export const TERMINAL_STATUSES: OrderStatus[] = ['delivered', 'returned', 'cancelled'];
+
+// Class CSS cho status badge (dùng chung ở list/detail/dashboard)
+export const ORDER_STATUS_CLASS: Record<string, string> = {
+  pending: 'st-pending',
+  paid: 'st-paid',
+  preparing: 'st-preparing',
+  shipping: 'st-shipping',
+  delivered: 'st-delivered',
+  returned: 'st-returned',
+  cancelled: 'st-cancelled'
+};

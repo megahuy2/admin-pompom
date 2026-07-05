@@ -1,4 +1,4 @@
-const { Order, OrderItem, ProductImage, RecentlyViewed, SearchHistory } = require('../models');
+const { Order, OrderItem, ProductImage, RecentlyViewed, SearchHistory, User } = require('../models');
 
 /**
  * Tạo điều kiện lọc theo khoảng thời gian created_at từ query ?from=&to=
@@ -144,4 +144,48 @@ async function getUserBehaviorReport(req, res) {
   }
 }
 
-module.exports = { getRevenueReport, getTopProducts, getUserBehaviorReport };
+/**
+ * GET /api/reports/top-customers?limit=5&from=&to=
+ * Khách hàng chi tiêu nhiều nhất: gộp Order (đã giao) theo user_id,
+ * sum(final_amount) và đếm số đơn, join User lấy tên/email/avatar.
+ */
+async function getTopCustomers(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const match = { status: 'delivered', user_id: { $ne: null } };
+    const dateMatch = buildDateMatch(req.query);
+    if (dateMatch) match.created_at = dateMatch;
+
+    const data = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$user_id',
+          totalSpent: { $sum: '$final_amount' },
+          orderCount: { $sum: 1 }
+        }
+      },
+      { $sort: { totalSpent: -1 } },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 0,
+          userId: '$_id',
+          full_name: '$user.full_name',
+          email: '$user.email',
+          avatar_url: '$user.avatar_url',
+          totalSpent: 1,
+          orderCount: 1
+        }
+      }
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+}
+
+module.exports = { getRevenueReport, getTopProducts, getUserBehaviorReport, getTopCustomers };

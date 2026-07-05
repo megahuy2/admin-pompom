@@ -37,6 +37,7 @@ const productSchema = new Schema({
 const productImageSchema = new Schema({
   product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   image_url: { type: String, required: true, trim: true },
+  public_id: { type: String, trim: true, default: null }, // Cloudinary public_id (ảnh admin upload) để xoá đúng asset
   sort_order: { type: Number, default: 0 }
 }, { timestamps: false });
 
@@ -52,6 +53,12 @@ const productVariantSchema = new Schema({
   stock: { type: Number, default: 0, min: 0 },
   image_url: { type: String, trim: true }
 }, { timestamps: false });
+
+// Index cho lọc theo danh mục/trạng thái và join ảnh/biến thể theo sản phẩm
+productSchema.index({ category_id: 1 });
+productSchema.index({ is_active: 1 });
+productImageSchema.index({ product_id: 1, sort_order: 1 });
+productVariantSchema.index({ product_id: 1 });
 
 module.exports = {
   Category: mongoose.model('Category', categorySchema),

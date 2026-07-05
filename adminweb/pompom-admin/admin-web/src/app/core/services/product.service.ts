@@ -10,6 +10,8 @@ export interface ProductQuery {
   search?: string;
   category_id?: string;
   is_active?: boolean;
+  sortBy?: '_id' | 'price' | 'stock' | 'name';
+  sortDir?: 'asc' | 'desc';
 }
 
 @Injectable({ providedIn: 'root' })

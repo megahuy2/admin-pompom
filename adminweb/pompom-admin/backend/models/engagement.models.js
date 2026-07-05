@@ -77,6 +77,13 @@ const recentlyViewedSchema = new Schema({
   viewed_at: { type: Date, default: Date.now }
 }, { timestamps: false });
 
+// Index cho join review theo sản phẩm, wishlist/notification theo user
+productReviewSchema.index({ product_id: 1 });
+productReviewSchema.index({ user_id: 1 });
+wishlistSchema.index({ user_id: 1 });
+notificationSchema.index({ user_id: 1, is_read: 1 });
+recentlyViewedSchema.index({ user_id: 1 });
+
 module.exports = {
   Wishlist: mongoose.model('Wishlist', wishlistSchema),
   ProductReview: mongoose.model('ProductReview', productReviewSchema),

@@ -25,9 +25,30 @@ async function getUsers(req, res) {
         .select('-password_hash')
         .skip((page - 1) * limit)
         .limit(limit)
-        .sort({ created_at: -1 }),
+        .sort({ created_at: -1 })
+        .lean(),
       User.countDocuments(filter)
     ]);
+
+    // Thống kê đơn hàng mỗi khách: số đơn (mọi trạng thái) + tổng chi tiêu (đơn đã giao)
+    const ids = users.map((u) => u._id);
+    const stats = await Order.aggregate([
+      { $match: { user_id: { $in: ids } } },
+      {
+        $group: {
+          _id: '$user_id',
+          order_count: { $sum: 1 },
+          total_spent: { $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, '$final_amount', 0] } }
+        }
+      }
+    ]);
+    const statMap = {};
+    stats.forEach((s) => { statMap[s._id.toString()] = s; });
+    users.forEach((u) => {
+      const s = statMap[u._id.toString()];
+      u.order_count = s?.order_count || 0;
+      u.total_spent = s?.total_spent || 0;
+    });
 
     res.json({ data: users, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {

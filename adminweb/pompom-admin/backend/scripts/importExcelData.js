@@ -31,6 +31,10 @@ async function run() {
     return idMap[sheet];
   };
 
+  // Chuẩn hoá giá trị enum từ dữ liệu nguồn (viết hoa/khác chuẩn) về đúng enum schema
+  const normPayMethod = (m) => ({ COD: 'COD', MOMO: 'MoMo', VNPAY: 'VNPay', VISA: 'VISA' }[String(m).toUpperCase()] || m);
+  const normPayStatus = (s) => (String(s).toLowerCase() === 'unpaid' ? 'pending' : s);
+
   console.log('\n--- XÓA DỮ LIỆU CŨ (nếu có) ---');
   for (const model of Object.values(models)) {
     await model.deleteMany({});
@@ -203,18 +207,23 @@ async function run() {
 
   // ====== 35. PROMOTION_DETAILS (phụ thuộc promotions, products) ======
   console.log('\n--- Import promotion_details ---');
+  let promoDetailCount = 0;
   for (const row of data.promotion_details) {
+    const productOid = row.product_id ? mapOf('products').get(row.product_id) : null;
+    // Bỏ qua dòng khuyến mãi không gắn sản phẩm cụ thể (product_id null) — schema yêu cầu product_id
+    if (!productOid) continue;
     await models.PromotionDetail.create({
       promotion_id: mapOf('promotions').get(row.promotion_id),
-      product_id: mapOf('products').get(row.product_id),
+      product_id: productOid,
       buy_quantity: row.buy_quantity,
       get_product_id: row.get_product_id ? mapOf('products').get(row.get_product_id) : null,
       get_quantity: row.get_quantity,
       discount_percent: row.discount_percent,
       discount_amount: row.discount_amount
     });
+    promoDetailCount++;
   }
-  console.log(`  -> ${data.promotion_details.length} promotion_details`);
+  console.log(`  -> ${promoDetailCount}/${data.promotion_details.length} promotion_details (bỏ dòng thiếu product_id)`);
 
   // ====== 10. CARTS (phụ thuộc users hoặc guest_sessions) ======
   console.log('\n--- Import carts ---');
@@ -255,8 +264,8 @@ async function run() {
       discount_amount: row.discount_amount,
       final_amount: row.final_amount,
       status: row.status,
-      payment_method: row.payment_method,
-      payment_status: row.payment_status,
+      payment_method: normPayMethod(row.payment_method),
+      payment_status: normPayStatus(row.payment_status),
       shipping_carrier: row.shipping_carrier,
       tracking_number: row.tracking_number,
       note: row.note,
@@ -299,7 +308,7 @@ async function run() {
       transaction_id: row.transaction_id,
       amount: row.amount,
       status: row.status,
-      payment_method: row.payment_method,
+      payment_method: normPayMethod(row.payment_method),
       paid_at: row.paid_at
     });
   }
@@ -318,9 +327,12 @@ async function run() {
 
   // ====== 17. PRODUCT_REVIEWS (phụ thuộc users, products, orders) ======
   console.log('\n--- Import product_reviews ---');
+  // Nguồn có review trỏ user_id vượt số user thực (1..56 vs 10 user) -> fallback về user thật theo vòng
+  const userOids = [...mapOf('users').values()];
+  const resolveUser = (uid) => mapOf('users').get(uid) || userOids[(Number(uid) - 1) % userOids.length];
   for (const row of data.product_reviews) {
     await models.ProductReview.create({
-      user_id: mapOf('users').get(row.user_id),
+      user_id: resolveUser(row.user_id),
       product_id: mapOf('products').get(row.product_id),
       order_id: row.order_id ? mapOf('orders').get(row.order_id) : null,
       rating: row.rating,
