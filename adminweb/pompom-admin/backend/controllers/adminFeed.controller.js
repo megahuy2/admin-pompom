@@ -1,7 +1,13 @@
-const { Reel, ConsultationRequest } = require('../models');
+const { Reel, ConsultationRequest, Blog, ExpertArticle, Expert } = require('../models');
 
 const REEL_SOURCES = ['instagram', 'facebook', 'tiktok', 'youtube'];
 const CONSULT_STATUSES = ['pending', 'contacted', 'done', 'cancelled'];
+
+const slugify = (s) => String(s || '').toLowerCase()
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const toTags = (v) => Array.isArray(v) ? v
+  : (v ? String(v).split(',').map((s) => s.trim()).filter(Boolean) : []);
 
 /* =============================== REELS =============================== */
 
@@ -165,7 +171,168 @@ async function deleteConsultation(req, res) {
   }
 }
 
+/* =============================== BLOGS =============================== */
+
+/** GET /api/admin/blogs?page=1&limit=20&search=&category= */
+async function listBlogs(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const filter = {};
+    if (req.query.search) filter.title = { $regex: req.query.search, $options: 'i' };
+    if (req.query.category) filter.category = req.query.category;
+    const [data, total] = await Promise.all([
+      Blog.find(filter).sort({ published_at: -1 }).skip((page - 1) * limit).limit(limit),
+      Blog.countDocuments(filter)
+    ]);
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
+async function createBlog(req, res) {
+  try {
+    const { title } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ message: 'Thiếu tiêu đề' });
+    const blog = await Blog.create({
+      title: title.trim(),
+      slug: (req.body.slug && req.body.slug.trim()) || (slugify(title) + '-' + Date.now().toString(36)),
+      cover_image: req.body.cover_image || '',
+      excerpt: req.body.excerpt || '',
+      content: req.body.content || '',
+      author: { name: req.body.author_name || 'PomPom Team', avatar_url: req.body.author_avatar || '', role: req.body.author_role || 'Thương hiệu' },
+      category: req.body.category || '',
+      tags: toTags(req.body.tags),
+      read_time: req.body.read_time || 3,
+      is_published: req.body.is_published !== undefined ? req.body.is_published : true
+    });
+    res.status(201).json(blog);
+  } catch (err) {
+    if (err.code === 11000) return res.status(400).json({ message: 'Slug đã tồn tại' });
+    res.status(400).json({ message: 'Không thể tạo blog', error: err.message });
+  }
+}
+
+async function updateBlog(req, res) {
+  try {
+    const patch = { ...req.body };
+    if (req.body.author_name !== undefined || req.body.author_role !== undefined || req.body.author_avatar !== undefined) {
+      patch.author = { name: req.body.author_name || 'PomPom Team', avatar_url: req.body.author_avatar || '', role: req.body.author_role || 'Thương hiệu' };
+    }
+    if (req.body.tags !== undefined) patch.tags = toTags(req.body.tags);
+    const blog = await Blog.findByIdAndUpdate(req.params.id, patch, { new: true, runValidators: true });
+    if (!blog) return res.status(404).json({ message: 'Không tìm thấy blog' });
+    res.json(blog);
+  } catch (err) { res.status(400).json({ message: 'Không thể cập nhật blog', error: err.message }); }
+}
+
+async function deleteBlog(req, res) {
+  try {
+    const blog = await Blog.findByIdAndDelete(req.params.id);
+    if (!blog) return res.status(404).json({ message: 'Không tìm thấy blog' });
+    res.json({ message: 'Đã xoá blog' });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
+/* ========================= EXPERT ARTICLES (tips bác sĩ) ========================= */
+
+async function listExpertArticles(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const filter = {};
+    if (req.query.search) filter.title = { $regex: req.query.search, $options: 'i' };
+    const [data, total] = await Promise.all([
+      ExpertArticle.find(filter).populate('expert_id', 'name title avatar_url').sort({ published_at: -1 }).skip((page - 1) * limit).limit(limit),
+      ExpertArticle.countDocuments(filter)
+    ]);
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
+async function createExpertArticle(req, res) {
+  try {
+    const { title, expert_id } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ message: 'Thiếu tiêu đề' });
+    if (!expert_id) return res.status(400).json({ message: 'Vui lòng chọn bác sĩ/chuyên gia' });
+    const art = await ExpertArticle.create({
+      expert_id, title: title.trim(),
+      cover_image: req.body.cover_image || '', excerpt: req.body.excerpt || '', content: req.body.content || '',
+      category: req.body.category || '', tags: toTags(req.body.tags),
+      read_time: req.body.read_time || 4,
+      is_published: req.body.is_published !== undefined ? req.body.is_published : true
+    });
+    res.status(201).json(art);
+  } catch (err) { res.status(400).json({ message: 'Không thể tạo bài viết', error: err.message }); }
+}
+
+async function updateExpertArticle(req, res) {
+  try {
+    const patch = { ...req.body };
+    if (req.body.tags !== undefined) patch.tags = toTags(req.body.tags);
+    const art = await ExpertArticle.findByIdAndUpdate(req.params.id, patch, { new: true, runValidators: true });
+    if (!art) return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+    res.json(art);
+  } catch (err) { res.status(400).json({ message: 'Không thể cập nhật', error: err.message }); }
+}
+
+async function deleteExpertArticle(req, res) {
+  try {
+    const art = await ExpertArticle.findByIdAndDelete(req.params.id);
+    if (!art) return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+    res.json({ message: 'Đã xoá bài viết' });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
+/* =============================== EXPERTS (bác sĩ) =============================== */
+
+async function listExperts(req, res) {
+  try {
+    const data = await Expert.find().sort({ created_at: -1 });
+    res.json({ data, total: data.length });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
+async function createExpert(req, res) {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ message: 'Thiếu tên' });
+    const expert = await Expert.create({
+      name: name.trim(), title: req.body.title || '', specialty: req.body.specialty || '',
+      avatar_url: req.body.avatar_url || '', credentials: req.body.credentials || '', bio: req.body.bio || '',
+      years_experience: req.body.years_experience || 0,
+      contact: { phone: req.body.phone || '', zalo: req.body.zalo || '', messenger: req.body.messenger || '', email: req.body.email || '' },
+      is_available: req.body.is_available !== undefined ? req.body.is_available : true
+    });
+    res.status(201).json(expert);
+  } catch (err) { res.status(400).json({ message: 'Không thể tạo chuyên gia', error: err.message }); }
+}
+
+async function updateExpert(req, res) {
+  try {
+    const patch = { ...req.body };
+    if (req.body.phone !== undefined || req.body.zalo !== undefined || req.body.messenger !== undefined || req.body.email !== undefined) {
+      patch.contact = { phone: req.body.phone || '', zalo: req.body.zalo || '', messenger: req.body.messenger || '', email: req.body.email || '' };
+    }
+    const expert = await Expert.findByIdAndUpdate(req.params.id, patch, { new: true, runValidators: true });
+    if (!expert) return res.status(404).json({ message: 'Không tìm thấy chuyên gia' });
+    res.json(expert);
+  } catch (err) { res.status(400).json({ message: 'Không thể cập nhật', error: err.message }); }
+}
+
+async function deleteExpert(req, res) {
+  try {
+    const used = await ExpertArticle.countDocuments({ expert_id: req.params.id });
+    if (used > 0) return res.status(400).json({ message: `Không thể xoá: còn ${used} bài viết gắn với chuyên gia này` });
+    const expert = await Expert.findByIdAndDelete(req.params.id);
+    if (!expert) return res.status(404).json({ message: 'Không tìm thấy chuyên gia' });
+    res.json({ message: 'Đã xoá chuyên gia' });
+  } catch (err) { res.status(500).json({ message: 'Lỗi server', error: err.message }); }
+}
+
 module.exports = {
   listReels, createReel, updateReel, deleteReel,
-  listConsultations, updateConsultation, deleteConsultation
+  listConsultations, updateConsultation, deleteConsultation,
+  listBlogs, createBlog, updateBlog, deleteBlog,
+  listExpertArticles, createExpertArticle, updateExpertArticle, deleteExpertArticle,
+  listExperts, createExpert, updateExpert, deleteExpert
 };

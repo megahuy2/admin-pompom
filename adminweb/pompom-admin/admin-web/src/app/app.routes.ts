@@ -108,8 +108,7 @@ export const routes: Routes = [
       },
       {
         path: 'posts',
-        loadComponent: () => import('./features/placeholder/placeholder').then((m) => m.Placeholder),
-        data: { title: 'Bài viết', icon: 'article' }
+        loadComponent: () => import('./features/community/posts/post-manage').then((m) => m.PostManage)
       },
       {
         path: 'report-export',
