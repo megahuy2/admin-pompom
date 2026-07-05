@@ -16,6 +16,7 @@ const categoryRoutes = require('./routes/category.routes');
 const voucherRoutes = require('./routes/voucher.routes');
 const websiteRoutes = require('./routes/website.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const adminFeedRoutes = require('./routes/adminFeed.routes');
 
 const path = require('path');
 
@@ -46,6 +47,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/website', websiteRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/admin', adminFeedRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Không tìm thấy endpoint' });

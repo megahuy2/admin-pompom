@@ -188,6 +188,8 @@ export class MainLayout {
       title: 'Cộng đồng',
       items: [
         { label: 'Cộng đồng', path: '/community', icon: 'forum' },
+        { label: 'Reels', path: '/community/reels', icon: 'movie' },
+        { label: 'Liên hệ tư vấn', path: '/community/consultations', icon: 'support_agent' },
         { label: 'Bài viết', path: '/posts', icon: 'article' },
         { label: 'Duyệt nội dung', path: '/moderation', icon: 'fact_check' }
       ]

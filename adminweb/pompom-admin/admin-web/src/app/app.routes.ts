@@ -81,6 +81,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/community/post-list/post-list').then((m) => m.PostList)
       },
       {
+        path: 'community/reels',
+        loadComponent: () => import('./features/community/reels/reel-list').then((m) => m.ReelList)
+      },
+      {
+        path: 'community/consultations',
+        loadComponent: () => import('./features/community/consultations/consultation-list').then((m) => m.ConsultationList)
+      },
+      {
         path: 'community/:id',
         loadComponent: () => import('./features/community/post-detail/post-detail').then((m) => m.PostDetail)
       },

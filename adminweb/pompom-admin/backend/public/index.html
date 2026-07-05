@@ -202,7 +202,7 @@
           </select>
         </div>
         <div class="field"><label>Nội dung cần tư vấn</label><textarea name="message" rows="3" placeholder="Mô tả tình trạng da / vấn đề bạn quan tâm…"></textarea></div>
-        <input type="hidden" name="expert_id" /><input type="hidden" name="source_article_id" />
+        <input type="hidden" name="expert_id" /><input type="hidden" name="source_article_id" /><input type="hidden" name="topic" />
         <button class="submit" type="submit">Gửi yêu cầu tư vấn</button>
       </form>
     </div>
@@ -293,7 +293,9 @@
               <div class="meta"><img src="${b.author?.avatar_url||''}"> <span>${esc(b.author?.name||'PomPom')}</span>
                 <span class="dot"></span><span>${b.read_time} phút đọc</span>
                 <span class="dot"></span><span>👁️ ${kfmt(b.view_count)}</span></div>
+              <button class="btn-consult" style="margin-top:12px;width:100%" data-name="PomPom" data-topic="${esc(b.title)}">💬 Liên hệ tư vấn</button>
             </div></div>`).join('')+`</div>`;
+        $$('.btn-consult',el).forEach(b=>b.addEventListener('click',()=>openConsult(b.dataset)));
       }catch(e){ el.innerHTML=`<div class="pad"><div class="loading">Lỗi tải blog (${e.message})</div></div>`; }
       loaded.blog=true;
     }
@@ -382,8 +384,10 @@
     function openConsult(ds){
       $('input[name=expert_id]').value = ds.expert||'';
       $('input[name=source_article_id]').value = ds.article||'';
-      $('#modalSub').textContent = ds.name ? `Gửi tới ${ds.name} — bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.`
-        : 'Để lại thông tin, bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.';
+      $('input[name=topic]').value = ds.topic||'';
+      $('#modalSub').textContent = ds.topic ? `Về bài viết: “${ds.topic}” — PomPom sẽ liên hệ tư vấn miễn phí cho bạn.`
+        : (ds.name ? `Gửi tới ${ds.name} — bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.`
+        : 'Để lại thông tin, bác sĩ sẽ liên hệ tư vấn miễn phí cho bạn.');
       modal.classList.add('show');
     }
     modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
